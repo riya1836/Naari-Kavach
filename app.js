@@ -5,17 +5,14 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// ================= FAKE RINGTONE + VIBRATION =================
-const ringtone = new Audio("./ringtone.mp3");
-ringtone.loop = true;
-
-// ===== MOBILE AUDIO UNLOCK (MANDATORY) =====
+// ================= AUDIO =================
+const ringtone = document.getElementById("ringtone");
 let audioUnlocked = false;
 
-document.addEventListener("click", unlockAudio, { once: true });
-document.addEventListener("touchstart", unlockAudio, { once: true });
-
+// 🔓 REQUIRED for mobile browsers
 function unlockAudio() {
+  if (audioUnlocked || !ringtone) return;
+
   ringtone.play()
     .then(() => {
       ringtone.pause();
@@ -23,10 +20,13 @@ function unlockAudio() {
       audioUnlocked = true;
       console.log("🔊 Audio unlocked");
     })
-    .catch(err => console.log("Audio unlock blocked", err));
+    .catch(() => {});
 }
 
-// ================= FIREBASE IMPORTS =================
+document.addEventListener("click", unlockAudio, { once: true });
+document.addEventListener("touchstart", unlockAudio, { once: true });
+
+// ================= FIREBASE =================
 import {
   collection,
   addDoc,
@@ -40,7 +40,7 @@ import {
 
 import { db } from "./firebase.js";
 
-// ================= DOM ELEMENTS =================
+// ================= DOM =================
 const sosBtn = document.getElementById("sosBtn");
 const statusText = document.getElementById("statusText");
 const actions = document.getElementById("actions");
@@ -57,15 +57,18 @@ const contactPhone = document.getElementById("contactPhone");
 // Fake call elements
 const triggerFakeCallBtn = document.getElementById("triggerFakeCall");
 const fakeCallerInput = document.getElementById("fakeCallerName");
+
 const fakeCallOverlay = document.getElementById("fakeCallOverlay");
 const callOngoingOverlay = document.getElementById("callOngoingOverlay");
+
 const incomingCallerName = document.getElementById("incomingCallerName");
 const ongoingCallerName = document.getElementById("ongoingCallerName");
+
 const acceptCallBtn = document.getElementById("acceptCall");
 const declineCallBtn = document.getElementById("declineCall");
 const endCallBtn = document.getElementById("endCall");
 
-// ================= SOS HOLD =================
+// ================= SOS =================
 let holdTimer = null;
 const HOLD_TIME = 3000;
 
@@ -84,10 +87,7 @@ function startHold(e) {
 }
 
 function cancelHold() {
-  if (holdTimer) {
-    clearTimeout(holdTimer);
-    holdTimer = null;
-  }
+  clearTimeout(holdTimer);
 }
 
 function triggerSOS() {
@@ -95,8 +95,8 @@ function triggerSOS() {
   statusText.innerText = "Fetching location…";
 
   navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
 
       await addDoc(collection(db, "sos_events"), {
         latitude,
@@ -104,10 +104,8 @@ function triggerSOS() {
         timestamp: serverTimestamp()
       });
 
-      const mapLink = `https://maps.google.com/?q=${latitude},${longitude}`;
-      const msg = `I need help. My live location: ${mapLink}`;
+      const msg = `I need help. My location: https://maps.google.com/?q=${latitude},${longitude}`;
       shareLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-      shareLink.target = "_blank";
 
       statusText.innerText = "Emergency alert sent.";
       actions.classList.remove("d-none");
@@ -129,19 +127,19 @@ function resetSOSUI() {
 async function loadContacts() {
   contactList.innerHTML = "";
 
-  const q = query(
-    collection(db, "emergency_contacts"),
-    orderBy("createdAt", "desc")
-  );
-
+  const q = query(collection(db, "emergency_contacts"), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
 
-  snapshot.forEach(docSnap => {
-    const data = docSnap.data();
-    const id = docSnap.id;
+  if (snapshot.empty) {
+    contactList.innerHTML = `<p class="text-center text-muted">No contacts added</p>`;
+    return;
+  }
 
+  snapshot.forEach(d => {
+    const data = d.data();
     const item = document.createElement("div");
     item.className = "call-item";
+
     item.innerHTML = `
       <div>
         <strong>${data.name}</strong>
@@ -153,11 +151,11 @@ async function loadContacts() {
       </div>
     `;
 
-    item.querySelector("button").onclick = () =>
-      window.location.href = `tel:${data.phone}`;
+    item.querySelector("button:first-child").onclick =
+      () => window.location.href = `tel:${data.phone}`;
 
-    item.querySelectorAll("button")[1].onclick = async () => {
-      await deleteDoc(doc(db, "emergency_contacts", id));
+    item.querySelector("button:last-child").onclick = async () => {
+      await deleteDoc(doc(db, "emergency_contacts", d.id));
       loadContacts();
     };
 
@@ -180,6 +178,12 @@ addContactBtn?.addEventListener("click", async () => {
 });
 
 // ================= FAKE CALL =================
+function stopRingtone() {
+  ringtone.pause();
+  ringtone.currentTime = 0;
+  navigator.vibrate?.(0);
+}
+
 triggerFakeCallBtn?.addEventListener("click", () => {
   const name = fakeCallerInput.value.trim();
   if (!name) return alert("Enter caller name");
@@ -187,19 +191,10 @@ triggerFakeCallBtn?.addEventListener("click", () => {
   incomingCallerName.innerText = name;
   fakeCallOverlay.classList.remove("d-none");
 
-  if (audioUnlocked) {
-    ringtone.currentTime = 0;
-    ringtone.play().catch(() => {});
-  }
-
+  ringtone.currentTime = 0;
+  ringtone.play().catch(() => {});
   navigator.vibrate?.([800, 400, 800]);
 });
-
-function stopRingtone() {
-  ringtone.pause();
-  ringtone.currentTime = 0;
-  navigator.vibrate?.(0);
-}
 
 acceptCallBtn?.addEventListener("click", () => {
   stopRingtone();
@@ -218,7 +213,7 @@ endCallBtn?.addEventListener("click", () => {
   callOngoingOverlay.classList.add("d-none");
 });
 
-// ================= NAVIGATION =================
+// ================= NAV =================
 navButtons.forEach(btn => {
   btn.addEventListener("click", () => {
     screens.forEach(s => s.classList.remove("active"));
