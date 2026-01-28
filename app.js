@@ -1,3 +1,4 @@
+// ================= SERVICE WORKER =================
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js");
@@ -8,8 +9,24 @@ if ("serviceWorker" in navigator) {
 const ringtone = new Audio("./ringtone.mp3");
 ringtone.loop = true;
 
+// ===== MOBILE AUDIO UNLOCK (MANDATORY) =====
+let audioUnlocked = false;
 
-// ================= IMPORTS =================
+document.addEventListener("click", unlockAudio, { once: true });
+document.addEventListener("touchstart", unlockAudio, { once: true });
+
+function unlockAudio() {
+  ringtone.play()
+    .then(() => {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+      audioUnlocked = true;
+      console.log("🔊 Audio unlocked");
+    })
+    .catch(err => console.log("Audio unlock blocked", err));
+}
+
+// ================= FIREBASE IMPORTS =================
 import {
   collection,
   addDoc,
@@ -23,40 +40,30 @@ import {
 
 import { db } from "./firebase.js";
 
-console.log("app.js loaded");
-
-// ===== AUDIO UNLOCK FOR MOBILE (IMPORTANT) =====
-let audioUnlocked = false;
-
-document.addEventListener("click", () => {
-  if (audioUnlocked) return;
-
-  ringtone.play()
-    .then(() => {
-      ringtone.pause();
-      ringtone.currentTime = 0;
-      audioUnlocked = true;
-      console.log("🔊 Audio unlocked");
-    })
-    .catch(() => {
-      console.log("Audio unlock blocked");
-    });
-}, { once: true });
-
-
 // ================= DOM ELEMENTS =================
 const sosBtn = document.getElementById("sosBtn");
 const statusText = document.getElementById("statusText");
 const actions = document.getElementById("actions");
+const shareLink = document.getElementById("shareLink");
 
 const navButtons = document.querySelectorAll(".nav-btn");
 const screens = document.querySelectorAll(".screen");
 
 const contactList = document.getElementById("contactList");
 const addContactBtn = document.getElementById("addContactBtn");
+const contactName = document.getElementById("contactName");
+const contactPhone = document.getElementById("contactPhone");
 
-const shareLink = document.getElementById("shareLink");
-
+// Fake call elements
+const triggerFakeCallBtn = document.getElementById("triggerFakeCall");
+const fakeCallerInput = document.getElementById("fakeCallerName");
+const fakeCallOverlay = document.getElementById("fakeCallOverlay");
+const callOngoingOverlay = document.getElementById("callOngoingOverlay");
+const incomingCallerName = document.getElementById("incomingCallerName");
+const ongoingCallerName = document.getElementById("ongoingCallerName");
+const acceptCallBtn = document.getElementById("acceptCall");
+const declineCallBtn = document.getElementById("declineCall");
+const endCallBtn = document.getElementById("endCall");
 
 // ================= SOS HOLD =================
 let holdTimer = null;
@@ -77,69 +84,49 @@ function startHold(e) {
 }
 
 function cancelHold() {
-  clearTimeout(holdTimer);
+  if (holdTimer) {
+    clearTimeout(holdTimer);
+    holdTimer = null;
+  }
 }
 
 function triggerSOS() {
   sosBtn.disabled = true;
   statusText.innerText = "Fetching location…";
 
-  if (!navigator.geolocation) {
-    statusText.innerText = "Location not supported.";
-    sosBtn.disabled = false;
-    return;
-  }
-
   navigator.geolocation.getCurrentPosition(
     async (position) => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+      const { latitude, longitude } = position.coords;
 
-      try {
-        await addDoc(collection(db, "sos_events"), {
-          latitude: lat,
-          longitude: lng,
-          status: "triggered",
-          timestamp: serverTimestamp()
-        });
-      } catch (err) {
-        console.error("Firebase error:", err);
-      }
+      await addDoc(collection(db, "sos_events"), {
+        latitude,
+        longitude,
+        timestamp: serverTimestamp()
+      });
 
-      const mapLink = `https://maps.google.com/?q=${lat},${lng}`;
-      const message = `I need help. My live location: ${mapLink}`;
-      const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-      // ✅ SET ONLY, DO NOT OPEN
-      shareLink.href = whatsappURL;
+      const mapLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+      const msg = `I need help. My live location: ${mapLink}`;
+      shareLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       shareLink.target = "_blank";
 
       statusText.innerText = "Emergency alert sent.";
       actions.classList.remove("d-none");
     },
-    (error) => {
-      console.error(error);
+    () => {
       statusText.innerText = "Location permission denied.";
       sosBtn.disabled = false;
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000
     }
   );
 }
 
-
 function resetSOSUI() {
   sosBtn.disabled = false;
   statusText.innerText = "Tap and hold SOS in case of emergency";
-  actions?.classList.add("d-none");
+  actions.classList.add("d-none");
 }
 
 // ================= CONTACTS =================
 async function loadContacts() {
-  if (!contactList) return;
-
   contactList.innerHTML = "";
 
   const q = query(
@@ -149,37 +136,27 @@ async function loadContacts() {
 
   const snapshot = await getDocs(q);
 
-  if (snapshot.empty) {
-    contactList.innerHTML =
-      `<p style="text-align:center;color:#9ca3af;font-size:14px;">
-        No contacts added
-      </p>`;
-    return;
-  }
-
   snapshot.forEach(docSnap => {
     const data = docSnap.data();
     const id = docSnap.id;
 
     const item = document.createElement("div");
     item.className = "call-item";
-
     item.innerHTML = `
-      <div class="call-info">
+      <div>
         <strong>${data.name}</strong>
         <span>${data.phone}</span>
       </div>
       <div class="call-actions">
-        <button class="call-btn">📞</button>
-        <button class="delete-btn">🗑️</button>
+        <button>📞</button>
+        <button>🗑️</button>
       </div>
     `;
 
-    item.querySelector(".call-btn").onclick = () =>
+    item.querySelector("button").onclick = () =>
       window.location.href = `tel:${data.phone}`;
 
-    item.querySelector(".delete-btn").onclick = async (e) => {
-      e.stopPropagation();
+    item.querySelectorAll("button")[1].onclick = async () => {
       await deleteDoc(doc(db, "emergency_contacts", id));
       loadContacts();
     };
@@ -189,17 +166,11 @@ async function loadContacts() {
 }
 
 addContactBtn?.addEventListener("click", async () => {
-  const name = contactName.value.trim();
-  const phone = contactPhone.value.trim();
-
-  if (!name || !phone) {
-    alert("Enter name and phone number");
-    return;
-  }
+  if (!contactName.value || !contactPhone.value) return;
 
   await addDoc(collection(db, "emergency_contacts"), {
-    name,
-    phone,
+    name: contactName.value,
+    phone: contactPhone.value,
     createdAt: serverTimestamp()
   });
 
@@ -208,29 +179,26 @@ addContactBtn?.addEventListener("click", async () => {
   loadContacts();
 });
 
-// ---------- FAKE CALL LOGIC ----------
-const ringtone = document.getElementById("ringtone");
-
+// ================= FAKE CALL =================
 triggerFakeCallBtn?.addEventListener("click", () => {
   const name = fakeCallerInput.value.trim();
-  if (!name) {
-    alert("Enter caller name");
-    return;
-  }
+  if (!name) return alert("Enter caller name");
 
   incomingCallerName.innerText = name;
   fakeCallOverlay.classList.remove("d-none");
 
-  // 🔔 START RINGTONE + VIBRATION
-  ringtone.currentTime = 0;
-  ringtone.play().catch(() => {});
-  if (navigator.vibrate) navigator.vibrate([800, 400, 800]);
+  if (audioUnlocked) {
+    ringtone.currentTime = 0;
+    ringtone.play().catch(() => {});
+  }
+
+  navigator.vibrate?.([800, 400, 800]);
 });
 
 function stopRingtone() {
   ringtone.pause();
   ringtone.currentTime = 0;
-  if (navigator.vibrate) navigator.vibrate(0);
+  navigator.vibrate?.(0);
 }
 
 acceptCallBtn?.addEventListener("click", () => {
@@ -263,8 +231,3 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
-
-
-
-
-
