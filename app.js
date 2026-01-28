@@ -5,7 +5,7 @@ if ("serviceWorker" in navigator) {
 }
 
 // ================= FAKE RINGTONE + VIBRATION =================
-const ringtone = new Audio("./assets/ringtone.mp3");
+const ringtone = new Audio("./ringtone.mp3");
 ringtone.loop = true;
 
 
@@ -242,5 +242,6 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
+
 
 
