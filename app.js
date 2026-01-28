@@ -25,6 +25,25 @@ import { db } from "./firebase.js";
 
 console.log("app.js loaded");
 
+// ===== AUDIO UNLOCK FOR MOBILE (IMPORTANT) =====
+let audioUnlocked = false;
+
+document.addEventListener("click", () => {
+  if (audioUnlocked) return;
+
+  ringtone.play()
+    .then(() => {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+      audioUnlocked = true;
+      console.log("🔊 Audio unlocked");
+    })
+    .catch(() => {
+      console.log("Audio unlock blocked");
+    });
+}, { once: true });
+
+
 // ================= DOM ELEMENTS =================
 const sosBtn = document.getElementById("sosBtn");
 const statusText = document.getElementById("statusText");
@@ -242,6 +261,7 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
+
 
 
 
