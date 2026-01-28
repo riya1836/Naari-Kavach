@@ -1,0 +1,245 @@
+:root {
+  --bg: #0f1115;
+  --card: #1a1d24;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #ef4444;
+}
+
+/* ---------- BASE ---------- */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ---------- CONTAINER ---------- */
+.container {
+  width: 100%;
+  max-width: 420px;
+  height: 100vh;
+  padding: 16px;
+}
+
+/* ---------- APP CARD ---------- */
+.app-card {
+  width: 100%;
+  height: 100%;
+  background-color: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ---------- SCREENS ---------- */
+.screen {
+  display: none;
+  flex: 1;
+  width: 100%;
+  flex-direction: column;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ---------- HOME ---------- */
+#homeScreen {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+#statusText {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* ---------- SOS BUTTON ---------- */
+#sosWrapper {
+  display: flex;
+  justify-content: center;
+}
+
+#sosBtn {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+
+  background: radial-gradient(circle at top, #ff6b6b, #b91c1c);
+  border: none;
+  margin: 20px 0;
+
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.45);
+  transition: transform 0.15s ease;
+}
+
+#sosBtn.holding {
+  transform: scale(0.97);
+}
+
+#actions {
+  width: 100%;
+  margin-top: 16px;
+}
+
+/* ---------- MAP ---------- */
+.map-container {
+  flex: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+}
+
+.map-container iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---------- CONTACT LIST ---------- */
+.call-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #111827;
+  padding: 14px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.call-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.call-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.call-actions button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ---------- FAKE CALL SETUP ---------- */
+.fake-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #1f2937;
+  border: none;
+  color: white;
+  border-radius: 12px;
+}
+
+/* ---------- BOTTOM NAV ---------- */
+.bottom-nav {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-around;
+  padding: 14px 0;
+  border-top: 1px solid #1f2937;
+}
+
+.bottom-nav button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #6b7280;
+}
+
+.bottom-nav button.active {
+  color: var(--accent);
+}
+
+/* ================= FAKE CALL (REALISTIC) ================= */
+
+.fake-call-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #020617, #000);
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 60px 24px;
+}
+
+.fake-call-top {
+  text-align: center;
+  margin-top: 80px;
+}
+
+.fake-call-top h1 {
+  font-size: 36px;
+  margin: 10px 0;
+}
+
+.incoming-text {
+  color: #9ca3af;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+#callTimer {
+  margin-top: 10px;
+  font-size: 18px;
+  color: #9ca3af;
+}
+
+.fake-call-actions {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 60px;
+}
+
+.call-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.call-circle.accept {
+  background-color: #16a34a;
+}
+
+.call-circle.decline {
+  background-color: #dc2626;
+}
