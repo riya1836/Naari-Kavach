@@ -189,60 +189,43 @@ addContactBtn?.addEventListener("click", async () => {
   loadContacts();
 });
 
-// ---------------- FAKE CALL LOGIC ----------------
-const triggerFakeCallBtn = document.getElementById("triggerFakeCall");
-const fakeCallerInput = document.getElementById("fakeCallerName");
-
-const fakeCallOverlay = document.getElementById("fakeCallOverlay");
-const callOngoingOverlay = document.getElementById("callOngoingOverlay");
-
-const incomingCallerName = document.getElementById("incomingCallerName");
-const ongoingCallerName = document.getElementById("ongoingCallerName");
-
-const acceptCallBtn = document.getElementById("acceptCall");
-const declineCallBtn = document.getElementById("declineCall");
-const endCallBtn = document.getElementById("endCall");
-
+// ---------- FAKE CALL LOGIC ----------
 const ringtone = document.getElementById("ringtone");
 
-// Trigger fake call (USER ACTION ✅)
 triggerFakeCallBtn?.addEventListener("click", () => {
-  const name = fakeCallerInput.value.trim() || "Unknown";
+  const name = fakeCallerInput.value.trim();
+
+  if (!name) {
+    alert("Enter caller name");
+    return;
+  }
 
   incomingCallerName.innerText = name;
-  fakeCallOverlay.classList.remove("d-none");
 
-  // 🔔 Play ringtone (allowed because click initiated it)
+  // ✅ START RINGTONE HERE (USER GESTURE)
   ringtone.currentTime = 0;
-  ringtone.play().catch(() => {
-    console.log("Ringtone blocked until user interaction");
+  ringtone.play().catch(err => {
+    console.log("Audio blocked:", err);
   });
 
-  // 📳 Vibration (mobile only)
-  if (navigator.vibrate) {
-    navigator.vibrate([500, 300, 500, 300, 500]);
-  }
+  fakeCallOverlay.classList.remove("d-none");
 });
 
-// Accept call
 acceptCallBtn?.addEventListener("click", () => {
   ringtone.pause();
-  ringtone.currentTime = 0;
 
   fakeCallOverlay.classList.add("d-none");
   ongoingCallerName.innerText = incomingCallerName.innerText;
   callOngoingOverlay.classList.remove("d-none");
 });
 
-// Decline call
 declineCallBtn?.addEventListener("click", () => {
   ringtone.pause();
-  ringtone.currentTime = 0;
   fakeCallOverlay.classList.add("d-none");
 });
 
-// End call
 endCallBtn?.addEventListener("click", () => {
+  ringtone.pause();
   callOngoingOverlay.classList.add("d-none");
 });
 
@@ -259,4 +242,5 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
+
 
