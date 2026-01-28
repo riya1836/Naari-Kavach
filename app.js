@@ -189,7 +189,7 @@ addContactBtn?.addEventListener("click", async () => {
   loadContacts();
 });
 
-// ================= FAKE CALL =================
+// ---------------- FAKE CALL LOGIC ----------------
 const triggerFakeCallBtn = document.getElementById("triggerFakeCall");
 const fakeCallerInput = document.getElementById("fakeCallerName");
 
@@ -198,71 +198,53 @@ const callOngoingOverlay = document.getElementById("callOngoingOverlay");
 
 const incomingCallerName = document.getElementById("incomingCallerName");
 const ongoingCallerName = document.getElementById("ongoingCallerName");
-const callTimer = document.getElementById("callTimer");
 
 const acceptCallBtn = document.getElementById("acceptCall");
 const declineCallBtn = document.getElementById("declineCall");
 const endCallBtn = document.getElementById("endCall");
 
-let timerInterval;
-let seconds = 0;
+const ringtone = document.getElementById("ringtone");
 
+// Trigger fake call (USER ACTION ✅)
 triggerFakeCallBtn?.addEventListener("click", () => {
-  const name = fakeCallerInput.value.trim();
-  if (!name) return alert("Enter caller name");
+  const name = fakeCallerInput.value.trim() || "Unknown";
 
   incomingCallerName.innerText = name;
   fakeCallOverlay.classList.remove("d-none");
 
-  // 🔊 Play ringtone
+  // 🔔 Play ringtone (allowed because click initiated it)
   ringtone.currentTime = 0;
   ringtone.play().catch(() => {
-    console.log("Autoplay blocked until user interaction");
+    console.log("Ringtone blocked until user interaction");
   });
 
-  // 📳 Vibrate (mobile only)
+  // 📳 Vibration (mobile only)
   if (navigator.vibrate) {
     navigator.vibrate([500, 300, 500, 300, 500]);
   }
 });
 
-
+// Accept call
 acceptCallBtn?.addEventListener("click", () => {
   ringtone.pause();
   ringtone.currentTime = 0;
 
   fakeCallOverlay.classList.add("d-none");
-  callOngoingOverlay.classList.remove("d-none");
-
   ongoingCallerName.innerText = incomingCallerName.innerText;
-
-  seconds = 0;
-  callTimer.innerText = "00:00";
-
-  timerInterval = setInterval(() => {
-    seconds++;
-    const min = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const sec = String(seconds % 60).padStart(2, "0");
-    callTimer.innerText = `${min}:${sec}`;
-  }, 1000);
+  callOngoingOverlay.classList.remove("d-none");
 });
 
-
+// Decline call
 declineCallBtn?.addEventListener("click", () => {
   ringtone.pause();
   ringtone.currentTime = 0;
   fakeCallOverlay.classList.add("d-none");
 });
 
-
+// End call
 endCallBtn?.addEventListener("click", () => {
-  clearInterval(timerInterval);
-  ringtone.pause();
-  ringtone.currentTime = 0;
   callOngoingOverlay.classList.add("d-none");
 });
-
-
 
 // ================= NAVIGATION =================
 navButtons.forEach(btn => {
@@ -277,3 +259,4 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
+
