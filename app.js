@@ -213,38 +213,40 @@ const ringtone = document.getElementById("ringtone");
 
 triggerFakeCallBtn?.addEventListener("click", () => {
   const name = fakeCallerInput.value.trim();
-
   if (!name) {
     alert("Enter caller name");
     return;
   }
 
   incomingCallerName.innerText = name;
-
-  // ✅ START RINGTONE HERE (USER GESTURE)
-  ringtone.currentTime = 0;
-  ringtone.play().catch(err => {
-    console.log("Audio blocked:", err);
-  });
-
   fakeCallOverlay.classList.remove("d-none");
+
+  // 🔔 START RINGTONE + VIBRATION
+  ringtone.currentTime = 0;
+  ringtone.play().catch(() => {});
+  if (navigator.vibrate) navigator.vibrate([800, 400, 800]);
 });
 
-acceptCallBtn?.addEventListener("click", () => {
+function stopRingtone() {
   ringtone.pause();
+  ringtone.currentTime = 0;
+  if (navigator.vibrate) navigator.vibrate(0);
+}
 
+acceptCallBtn?.addEventListener("click", () => {
+  stopRingtone();
   fakeCallOverlay.classList.add("d-none");
   ongoingCallerName.innerText = incomingCallerName.innerText;
   callOngoingOverlay.classList.remove("d-none");
 });
 
 declineCallBtn?.addEventListener("click", () => {
-  ringtone.pause();
+  stopRingtone();
   fakeCallOverlay.classList.add("d-none");
 });
 
 endCallBtn?.addEventListener("click", () => {
-  ringtone.pause();
+  stopRingtone();
   callOngoingOverlay.classList.add("d-none");
 });
 
@@ -261,6 +263,7 @@ navButtons.forEach(btn => {
     if (btn.dataset.screen === "contactsScreen") loadContacts();
   });
 });
+
 
 
 
